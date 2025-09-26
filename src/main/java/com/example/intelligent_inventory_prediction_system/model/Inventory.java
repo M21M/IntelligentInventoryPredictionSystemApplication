@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
+
 
 @Entity
 @Data
@@ -14,15 +14,10 @@ public class Inventory {
     private Long id;
 
     @OneToOne
+    @JoinColumn(name = "product_id")
     private Product product;
 
     private Integer currentStock;
     private LocalDateTime lastUpdated;
-
-    private Integer predicatedDemand;
-    private Double predictedDemandConfidence;
-
-    @OneToMany(mappedBy = "inventory")
-    private List<InventoryPrediction> predictions;
 
 }
