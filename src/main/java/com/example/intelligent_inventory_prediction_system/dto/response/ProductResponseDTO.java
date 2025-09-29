@@ -4,9 +4,10 @@ import lombok.Data;
 
 @Data
 public class ProductResponseDTO {
-    private Long Id;
-    private String Name;
-    private String Category;
-    private double Price;
-    private ProductStatus Status;
+    private Long id;
+    private String name;
+    private String category;
+    private String description;
+    private Double price;
+    private ProductStatus status;
 }

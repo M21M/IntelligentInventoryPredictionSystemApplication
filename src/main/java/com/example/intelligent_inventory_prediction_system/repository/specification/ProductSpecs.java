@@ -1,19 +1,19 @@
 package com.example.intelligent_inventory_prediction_system.repository.specification;
 
 import com.example.intelligent_inventory_prediction_system.model.Product;
+import com.example.intelligent_inventory_prediction_system.model.ProductStatus;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 public class ProductSpecs {
 
     private ProductSpecs() {
-        // Utility class - prevent instantiation
     }
 
     public static Specification<Product> hasName(String productName) {
         return (root, query, criteriaBuilder) -> {
             if (!StringUtils.hasText(productName)) {
-                return criteriaBuilder.conjunction(); // Returns true (no filter)
+                return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.like(
                     criteriaBuilder.lower(root.get("name")),
@@ -79,37 +79,77 @@ public class ProductSpecs {
         };
     }
 
+
     public static Specification<Product> isAvailable() {
         return (root, query, criteriaBuilder) ->
-                criteriaBuilder.isTrue(root.get("availability"));
+                criteriaBuilder.equal(root.get("status"), ProductStatus.AVAILABLE);
     }
+
 
     public static Specification<Product> hasAvailability(Boolean availability) {
         return (root, query, criteriaBuilder) -> {
             if (availability == null) {
                 return criteriaBuilder.conjunction();
             }
-            return criteriaBuilder.equal(root.get("availability"), availability);
+            if (availability) {
+                return criteriaBuilder.equal(root.get("status"), ProductStatus.AVAILABLE);
+            } else {
+                return criteriaBuilder.equal(root.get("status"), ProductStatus.NOT_AVAILABLE);
+            }
         };
     }
 
+
     public static Specification<Product> isActive() {
         return (root, query, criteriaBuilder) ->
-                criteriaBuilder.isTrue(root.get("active"));
+                criteriaBuilder.equal(root.get("status"), ProductStatus.AVAILABLE);
     }
 
-    public static Specification<Product> hasStatus(String status) {
+
+    public static Specification<Product> hasStatus(ProductStatus status) {
         return (root, query, criteriaBuilder) -> {
-            if (!StringUtils.hasText(status)) {
+            if (status == null) {
                 return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.equal(root.get("status"), status);
         };
     }
 
-    // Combined specifications for common use cases
+
+    public static Specification<Product> hasStatus(String status) {
+        return (root, query, criteriaBuilder) -> {
+            if (!StringUtils.hasText(status)) {
+                return criteriaBuilder.conjunction();
+            }
+            try {
+                ProductStatus productStatus = ProductStatus.valueOf(status.toUpperCase());
+                return criteriaBuilder.equal(root.get("status"), productStatus);
+            } catch (IllegalArgumentException e) {
+
+                return criteriaBuilder.disjunction();
+            }
+        };
+    }
+
+
     public static Specification<Product> isActiveAndAvailable() {
-        return isActive().and(isAvailable());
+        return isAvailable();
+    }
+
+
+    public static Specification<Product> isNotAvailable() {
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("status"), ProductStatus.NOT_AVAILABLE);
+    }
+
+
+    public static Specification<Product> hasAnyStatus(ProductStatus... statuses) {
+        return (root, query, criteriaBuilder) -> {
+            if (statuses == null || statuses.length == 0) {
+                return criteriaBuilder.conjunction();
+            }
+            return root.get("status").in((Object[]) statuses);
+        };
     }
 
     public static Specification<Product> searchByKeyword(String keyword) {
