@@ -41,4 +41,5 @@ public class ProductQueryExecutor {
         log.debug("Found {} products for operation: {}", products.size(), operationDescription);
         return productResponseMapper.toProductResponseDTOList(products);
     }
+
 }

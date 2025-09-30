@@ -2,12 +2,12 @@ package com.example.intelligent_inventory_prediction_system.validator;
 
 import com.example.intelligent_inventory_prediction_system.dto.request.ProductRequestDTO;
 import com.example.intelligent_inventory_prediction_system.model.ProductStatus;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import static com.example.intelligent_inventory_prediction_system.constants.ProductConstants.*;
 
-@Component
+@Service
 public class ProductValidator {
 
     public void validateCreateRequest(ProductRequestDTO request) {

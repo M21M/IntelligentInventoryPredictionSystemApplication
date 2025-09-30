@@ -27,32 +27,32 @@ public class ProductSearchService {
     public List<ProductResponseDTO> searchProducts(ProductSearchCriteria criteria) {
         log.debug("Searching products with criteria: {}", criteria);
         Specification<Product> specification = buildSearchSpecification(criteria);
-        return queryExecutor.executeSpecificationQuery(specification, "advanced search");
+        return  queryExecutor.executeSpecificationQuery(specification, "advanced search");
     }
 
     public List<ProductResponseDTO> findByName(String name) {
         Specification<Product> specification = ProductSpecs.hasName(name);
-        return queryExecutor.executeSpecificationQuery(specification, "find by name: " + name);
+        return  queryExecutor.executeSpecificationQuery(specification, "find by name: " + name);
     }
 
     public List<ProductResponseDTO> findByCategory(String category) {
         Specification<Product> specification = ProductSpecs.hasCategory(category);
-        return queryExecutor.executeSpecificationQuery(specification, "find by category: " + category);
+        return  queryExecutor.executeSpecificationQuery(specification, "find by category: " + category);
     }
 
     public List<ProductResponseDTO> findByKeyword(String keyword) {
         Specification<Product> specification = ProductSpecs.searchByKeyword(keyword);
-        return queryExecutor.executeSpecificationQuery(specification, "search by keyword: " + keyword);
+        return   queryExecutor.executeSpecificationQuery(specification, "search by keyword: " + keyword);
     }
 
     public List<ProductResponseDTO> findActiveProducts() {
         Specification<Product> specification = ProductSpecs.isActiveAndAvailable();
-        return queryExecutor.executeSpecificationQuery(specification, "find active products");
+        return  queryExecutor.executeSpecificationQuery(specification, "find active products");
     }
 
     public List<ProductResponseDTO> findByPriceRange(Double minPrice, Double maxPrice) {
         Specification<Product> specification = ProductSpecs.hasPriceBetween(minPrice, maxPrice);
-        return queryExecutor.executeSpecificationQuery(specification,
+        return  queryExecutor.executeSpecificationQuery(specification,
                 String.format("find by price range: %s - %s", minPrice, maxPrice));
     }
 
@@ -66,13 +66,13 @@ public class ProductSearchService {
     public List<ProductResponseDTO> findAvailableProductsAbovePrice(Double minPrice) {
         Specification<Product> specification = ProductSpecs.isAvailable()
                 .and(ProductSpecs.hasPriceGreaterThan(minPrice));
-        return queryExecutor.executeSpecificationQuery(specification,
+        return  queryExecutor.executeSpecificationQuery(specification,
                 "find available products above price: " + minPrice);
     }
 
     public List<ProductResponseDTO> findByStatus(ProductStatus status) {
         Specification<Product> specification = ProductSpecs.hasStatus(status.name());
-        return queryExecutor.executeSpecificationQuery(specification, "find by status: " + status);
+        return  queryExecutor.executeSpecificationQuery(specification, "find by status: " + status);
     }
 
     private Specification<Product> buildSearchSpecification(ProductSearchCriteria criteria) {
