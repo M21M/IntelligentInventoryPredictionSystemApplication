@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class InventoryResponseDTO {
+    private Long id;
     private Long productId;
     private Integer currentStock;
     private LocalDateTime lastUpdated;
