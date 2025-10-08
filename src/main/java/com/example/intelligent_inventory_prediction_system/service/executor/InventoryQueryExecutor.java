@@ -1,6 +1,7 @@
 package com.example.intelligent_inventory_prediction_system.service.executor;
 
 import com.example.intelligent_inventory_prediction_system.dto.response.InventoryResponseDTO;
+import com.example.intelligent_inventory_prediction_system.dto.search.InventorySearchCriteria;
 import com.example.intelligent_inventory_prediction_system.mapper.response.InventoryResponseMapper;
 import com.example.intelligent_inventory_prediction_system.model.Inventory;
 import com.example.intelligent_inventory_prediction_system.repository.InventoryRepository;
@@ -25,7 +26,6 @@ public class InventoryQueryExecutor {
         log.debug("Executing query: {}", operationDescription);
         List<Inventory> inventories = inventoryRepository.findAll(specification);
         log.debug("Found {} inventories for operation: {}", inventories.size(), operationDescription);
-        // Changed to use the mapper's list conversion method
         return inventoryResponseMapper.toInventoryResponseDTOList(inventories);
     }
 
@@ -40,7 +40,8 @@ public class InventoryQueryExecutor {
         log.debug("Executing simple query: {}", operationDescription);
         List<Inventory> inventories = inventoryRepository.findAll();
         log.debug("Found {} inventories for operation: {}", inventories.size(), operationDescription);
-        // Changed to use the mapper's list conversion method
         return inventoryResponseMapper.toInventoryResponseDTOList(inventories);
     }
+
+
 }

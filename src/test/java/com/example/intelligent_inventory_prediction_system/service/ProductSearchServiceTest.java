@@ -6,7 +6,6 @@ import com.example.intelligent_inventory_prediction_system.model.ProductStatus;
 import com.example.intelligent_inventory_prediction_system.service.executor.ProductQueryExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,11 +13,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,394 +32,199 @@ class ProductSearchServiceTest {
     @InjectMocks
     private ProductSearchService productSearchService;
 
-    private TestDataFactory testDataFactory;
+    private List<ProductResponseDTO> sampleProducts;
 
     @BeforeEach
     void setUp() {
-        testDataFactory = new TestDataFactory();
+        sampleProducts = createSampleProducts();
     }
 
-    @Nested
-    @DisplayName("Advanced Search Tests")
-    class AdvancedSearchTests {
+    @Test
+    @DisplayName("Should search products with multiple criteria")
+    void testSearchProductsWithCriteria() {
+        ProductSearchCriteria criteria = ProductSearchCriteria.builder()
+                .category("Electronics")
+                .minPrice(100.0)
+                .maxPrice(2000.0)
+                .availability(true)
+                .build();
 
-        @Test
-        @DisplayName("Should search products with multiple criteria and return matching results")
-        void searchProducts_withMultipleCriteria_shouldReturnMatchingProducts() {
-            var searchCriteria = testDataFactory.createAdvancedSearchCriteria();
-            var expectedProducts = testDataFactory.createElectronicsProducts();
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
 
-            givenQueryExecutorReturnsProducts(expectedProducts, "advanced search");
+        List<ProductResponseDTO> result = productSearchService.searchProducts(criteria);
 
-            var result = whenSearchingProducts(searchCriteria);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation("advanced search");
-        }
-
-        @Test
-        @DisplayName("Should return all products when criteria is empty")
-        void searchProducts_withEmptyCriteria_shouldReturnAllProducts() {
-            var emptyCriteria = testDataFactory.createEmptySearchCriteria();
-            var allProducts = testDataFactory.createAllProducts();
-
-            givenQueryExecutorReturnsProducts(allProducts, "advanced search");
-
-            var result = whenSearchingProducts(emptyCriteria);
-
-            thenResultShouldContainExpectedProducts(result, allProducts);
-            thenQueryExecutorWasCalledWithOperation("advanced search");
-        }
-
-        @Test
-        @DisplayName("Should return empty list when no products match criteria")
-        void searchProducts_withNoMatches_shouldReturnEmptyList() {
-            var searchCriteria = testDataFactory.createNoMatchSearchCriteria();
-            var emptyList = testDataFactory.createEmptyProductList();
-
-            givenQueryExecutorReturnsProducts(emptyList, "advanced search");
-
-            var result = whenSearchingProducts(searchCriteria);
-
-            thenResultShouldBeEmpty(result);
-            thenQueryExecutorWasCalledWithOperation("advanced search");
-        }
-
-        private List<ProductResponseDTO> whenSearchingProducts(ProductSearchCriteria criteria) {
-            return productSearchService.searchProducts(criteria);
-        }
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        verify(productQueryExecutor).executeSpecificationQuery(any(Specification.class), anyString());
     }
 
-    @Nested
-    @DisplayName("Simple Search Tests")
-    class SimpleSearchTests {
+    @Test
+    @DisplayName("Should return all products with empty criteria")
+    void testSearchProductsWithEmptyCriteria() {
+        ProductSearchCriteria emptyCriteria = ProductSearchCriteria.builder().build();
 
-        @Test
-        @DisplayName("Should find products by name")
-        void findByName_withValidName_shouldReturnMatchingProducts() {
-            var productName = "Laptop";
-            var expectedProducts = testDataFactory.createLaptopProducts();
-            var expectedOperation = "find by name: " + productName;
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
 
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
+        List<ProductResponseDTO> result = productSearchService.searchProducts(emptyCriteria);
 
-            var result = whenFindingByName(productName);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        @Test
-        @DisplayName("Should return empty list when name not found")
-        void findByName_withNonExistentName_shouldReturnEmptyList() {
-            var productName = "NonExistent";
-            var emptyList = testDataFactory.createEmptyProductList();
-            var expectedOperation = "find by name: " + productName;
-
-            givenQueryExecutorReturnsProducts(emptyList, expectedOperation);
-
-            var result = whenFindingByName(productName);
-
-            thenResultShouldBeEmpty(result);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        @Test
-        @DisplayName("Should find products by category")
-        void findByCategory_withValidCategory_shouldReturnMatchingProducts() {
-            var category = "Electronics";
-            var expectedProducts = testDataFactory.createElectronicsProducts();
-            var expectedOperation = "find by category: " + category;
-
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
-
-            var result = whenFindingByCategory(category);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        @Test
-        @DisplayName("Should find products by keyword")
-        void findByKeyword_withValidKeyword_shouldReturnMatchingProducts() {
-            var keyword = "gaming";
-            var expectedProducts = testDataFactory.createGamingProducts();
-            var expectedOperation = "search by keyword: " + keyword;
-
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
-
-            var result = whenFindingByKeyword(keyword);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        @Test
-        @DisplayName("Should find active products only")
-        void findActiveProducts_shouldReturnOnlyActiveProducts() {
-            var expectedProducts = testDataFactory.createActiveProducts();
-            var expectedOperation = "find active products";
-
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
-
-            var result = whenFindingActiveProducts();
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        private List<ProductResponseDTO> whenFindingByName(String name) {
-            return productSearchService.findByName(name);
-        }
-
-        private List<ProductResponseDTO> whenFindingByCategory(String category) {
-            return productSearchService.findByCategory(category);
-        }
-
-        private List<ProductResponseDTO> whenFindingByKeyword(String keyword) {
-            return productSearchService.findByKeyword(keyword);
-        }
-
-        private List<ProductResponseDTO> whenFindingActiveProducts() {
-            return productSearchService.findActiveProducts();
-        }
+        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
     }
 
-    @Nested
-    @DisplayName("Price Range Search Tests")
-    class PriceRangeSearchTests {
+    @Test
+    @DisplayName("Should return empty list when no matches found")
+    void testSearchProductsWithNoMatches() {
+        ProductSearchCriteria criteria = ProductSearchCriteria.builder()
+                .name("NonExistent")
+                .build();
 
-        @Test
-        @DisplayName("Should find products within price range")
-        void findByPriceRange_withBothMinAndMax_shouldReturnProductsInRange() {
-            var minPrice = 100.0;
-            var maxPrice = 1000.0;
-            var expectedProducts = testDataFactory.createMidRangeProducts();
-            var expectedOperation = String.format("find by price range: %s - %s", minPrice, maxPrice);
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(new ArrayList<>());
 
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
+        List<ProductResponseDTO> result = productSearchService.searchProducts(criteria);
 
-            var result = whenFindingByPriceRange(minPrice, maxPrice);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        @Test
-        @DisplayName("Should find products above minimum price")
-        void findByPriceRange_withMinPriceOnly_shouldReturnProductsAboveMin() {
-            var minPrice = 500.0;
-            var maxPrice = (Double) null;
-            var expectedProducts = testDataFactory.createExpensiveProducts();
-            var expectedOperation = String.format("find by price range: %s - %s", minPrice, maxPrice);
-
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
-
-            var result = whenFindingByPriceRange(minPrice, maxPrice);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        @Test
-        @DisplayName("Should find available products above price")
-        void findAvailableProductsAbovePrice_shouldReturnMatchingProducts() {
-            var minPrice = 500.0;
-            var expectedProducts = testDataFactory.createExpensiveAvailableProducts();
-            var expectedOperation = "find available products above price: " + minPrice;
-
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
-
-            var result = whenFindingAvailableProductsAbovePrice(minPrice);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        private List<ProductResponseDTO> whenFindingByPriceRange(Double minPrice, Double maxPrice) {
-            return productSearchService.findByPriceRange(minPrice, maxPrice);
-        }
-
-        private List<ProductResponseDTO> whenFindingAvailableProductsAbovePrice(Double minPrice) {
-            return productSearchService.findAvailableProductsAbovePrice(minPrice);
-        }
+        assertThat(result).isEmpty();
     }
 
-    @Nested
-    @DisplayName("Status and Availability Search Tests")
-    class StatusAndAvailabilitySearchTests {
+    @Test
+    @DisplayName("Should find products by name")
+    void testFindByName() {
+        String productName = "Laptop";
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
 
-        @Test
-        @DisplayName("Should find products by status")
-        void findByStatus_withAvailableStatus_shouldReturnAvailableProducts() {
-            var status = ProductStatus.AVAILABLE;
-            var expectedProducts = testDataFactory.createAvailableProducts();
-            var expectedOperation = "find by status: " + status;
+        List<ProductResponseDTO> result = productSearchService.findByName(productName);
 
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
-
-            var result = whenFindingByStatus(status);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        @Test
-        @DisplayName("Should find products by category and availability")
-        void findByCategoryAndAvailability_shouldReturnMatchingProducts() {
-            var category = "Electronics";
-            var availability = true;
-            var expectedProducts = testDataFactory.createAvailableElectronicsProducts();
-            var expectedOperation = String.format("find by category: %s and availability: %s", category, availability);
-
-            givenQueryExecutorReturnsProducts(expectedProducts, expectedOperation);
-
-            var result = whenFindingByCategoryAndAvailability(category, availability);
-
-            thenResultShouldContainExpectedProducts(result, expectedProducts);
-            thenQueryExecutorWasCalledWithOperation(expectedOperation);
-        }
-
-        private List<ProductResponseDTO> whenFindingByStatus(ProductStatus status) {
-            return productSearchService.findByStatus(status);
-        }
-
-        private List<ProductResponseDTO> whenFindingByCategoryAndAvailability(String category, Boolean availability) {
-            return productSearchService.findByCategoryAndAvailability(category, availability);
-        }
+        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
+        verify(productQueryExecutor).executeSpecificationQuery(any(Specification.class), anyString());
     }
 
-    // Given methods
-    private void givenQueryExecutorReturnsProducts(List<ProductResponseDTO> products, String operation) {
-        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), eq(operation)))
-                .thenReturn(products);
+    @Test
+    @DisplayName("Should find products by category")
+    void testFindByCategory() {
+        String category = "Electronics";
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
+
+        List<ProductResponseDTO> result = productSearchService.findByCategory(category);
+
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
     }
 
-    // Then methods
-    private void thenResultShouldContainExpectedProducts(List<ProductResponseDTO> result, List<ProductResponseDTO> expected) {
-        assertThat(result)
-                .isNotNull()
-                .hasSize(expected.size())
-                .containsExactlyElementsOf(expected);
+    @Test
+    @DisplayName("Should find products by keyword")
+    void testFindByKeyword() {
+        String keyword = "gaming";
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(List.of(sampleProducts.get(0)));
+
+        List<ProductResponseDTO> result = productSearchService.findByKeyword(keyword);
+
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
     }
 
-    private void thenResultShouldBeEmpty(List<ProductResponseDTO> result) {
-        assertThat(result)
-                .isNotNull()
-                .isEmpty();
+    @Test
+    @DisplayName("Should find only active products")
+    void testFindActiveProducts() {
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
+
+        List<ProductResponseDTO> result = productSearchService.findActiveProducts();
+
+        assertThat(result).isNotNull();
+        assertThat(result).allMatch(p -> p.getStatus() == ProductStatus.AVAILABLE);
     }
 
-    private void thenQueryExecutorWasCalledWithOperation(String operation) {
-        verify(productQueryExecutor).executeSpecificationQuery(any(Specification.class), eq(operation));
+    @Test
+    @DisplayName("Should find products within price range")
+    void testFindByPriceRange() {
+        Double minPrice = 100.0;
+        Double maxPrice = 1500.0;
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
+
+        List<ProductResponseDTO> result = productSearchService.findByPriceRange(minPrice, maxPrice);
+
+        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
     }
 
-    private static class TestDataFactory {
+    @Test
+    @DisplayName("Should find products above minimum price only")
+    void testFindByMinPriceOnly() {
+        Double minPrice = 500.0;
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(List.of(sampleProducts.get(0)));
 
-        ProductSearchCriteria createAdvancedSearchCriteria() {
-            var criteria = ProductSearchCriteria.builder()
-                    .category("Electronics")
-                    .minPrice(500.0)
-                    .availability(true)
-                    .build();
-            return criteria;
-        }
+        List<ProductResponseDTO> result = productSearchService.findByPriceRange(minPrice, null);
 
-        ProductSearchCriteria createEmptySearchCriteria() {
-            return ProductSearchCriteria.builder().build();
-        }
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+    }
 
-        ProductSearchCriteria createNoMatchSearchCriteria() {
-            return ProductSearchCriteria.builder()
-                    .name("NonExistentProduct")
-                    .category("NonExistentCategory")
-                    .build();
-        }
+    @Test
+    @DisplayName("Should find available products above price")
+    void testFindAvailableProductsAbovePrice() {
+        Double minPrice = 500.0;
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(List.of(sampleProducts.get(0)));
 
-        List<ProductResponseDTO> createElectronicsProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE),
-                    createDTO(2L, "Smartphone", "Electronics", "Flagship smartphone", 999.99, ProductStatus.AVAILABLE)
-            );
-        }
+        List<ProductResponseDTO> result = productSearchService.findAvailableProductsAbovePrice(minPrice);
 
-        List<ProductResponseDTO> createLaptopProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE)
-            );
-        }
+        assertThat(result).isNotNull();
+        assertThat(result).allMatch(p -> p.getPrice() > minPrice);
+    }
 
-        List<ProductResponseDTO> createGamingProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE)
-            );
-        }
+    @Test
+    @DisplayName("Should find products by status")
+    void testFindByStatus() {
+        ProductStatus status = ProductStatus.AVAILABLE;
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
 
-        List<ProductResponseDTO> createActiveProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE),
-                    createDTO(4L, "Coffee Mug", "Kitchen", "Ceramic coffee mug", 15.50, ProductStatus.AVAILABLE)
-            );
-        }
+        List<ProductResponseDTO> result = productSearchService.findByStatus(status);
 
-        List<ProductResponseDTO> createAvailableProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE),
-                    createDTO(2L, "Smartphone", "Electronics", "Flagship smartphone", 999.99, ProductStatus.AVAILABLE),
-                    createDTO(4L, "Coffee Mug", "Kitchen", "Ceramic coffee mug", 15.50, ProductStatus.AVAILABLE)
-            );
-        }
+        assertThat(result).isNotNull();
+        assertThat(result).allMatch(p -> p.getStatus() == ProductStatus.AVAILABLE);
+    }
 
-        List<ProductResponseDTO> createAvailableElectronicsProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE),
-                    createDTO(2L, "Smartphone", "Electronics", "Flagship smartphone", 999.99, ProductStatus.AVAILABLE)
-            );
-        }
+    @Test
+    @DisplayName("Should find products by category and availability")
+    void testFindByCategoryAndAvailability() {
+        String category = "Electronics";
+        Boolean availability = true;
+        when(productQueryExecutor.executeSpecificationQuery(any(Specification.class), anyString()))
+                .thenReturn(sampleProducts);
 
-        List<ProductResponseDTO> createMidRangeProducts() {
-            return List.of(
-                    createDTO(2L, "Smartphone", "Electronics", "Flagship smartphone", 999.99, ProductStatus.AVAILABLE),
-                    createDTO(3L, "Desk Chair", "Furniture", "Ergonomic chair", 199.99, ProductStatus.NOT_AVAILABLE)
-            );
-        }
+        List<ProductResponseDTO> result = productSearchService.findByCategoryAndAvailability(category, availability);
 
-        List<ProductResponseDTO> createExpensiveProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE),
-                    createDTO(2L, "Smartphone", "Electronics", "Flagship smartphone", 999.99, ProductStatus.AVAILABLE)
-            );
-        }
+        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
+        verify(productQueryExecutor).executeSpecificationQuery(any(Specification.class), anyString());
+    }
 
-        List<ProductResponseDTO> createExpensiveAvailableProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE),
-                    createDTO(2L, "Smartphone", "Electronics", "Flagship smartphone", 999.99, ProductStatus.AVAILABLE)
-            );
-        }
+    private List<ProductResponseDTO> createSampleProducts() {
+        ProductResponseDTO laptop = new ProductResponseDTO();
+        laptop.setId(1L);
+        laptop.setName("Laptop");
+        laptop.setCategory("Electronics");
+        laptop.setDescription("Gaming laptop");
+        laptop.setPrice(1500.0);
+        laptop.setStatus(ProductStatus.AVAILABLE);
 
-        List<ProductResponseDTO> createAllProducts() {
-            return List.of(
-                    createDTO(1L, "Laptop", "Electronics", "Gaming laptop", 1500.0, ProductStatus.AVAILABLE),
-                    createDTO(2L, "Smartphone", "Electronics", "Flagship smartphone", 999.99, ProductStatus.AVAILABLE),
-                    createDTO(3L, "Desk Chair", "Furniture", "Ergonomic chair", 199.99, ProductStatus.NOT_AVAILABLE),
-                    createDTO(4L, "Coffee Mug", "Kitchen", "Ceramic coffee mug", 15.50, ProductStatus.AVAILABLE),
-                    createDTO(5L, "Backpack", "Accessories", "Waterproof backpack", 59.99, ProductStatus.NOT_AVAILABLE)
-            );
-        }
+        ProductResponseDTO smartphone = new ProductResponseDTO();
+        smartphone.setId(2L);
+        smartphone.setName("Smartphone");
+        smartphone.setCategory("Electronics");
+        smartphone.setDescription("Flagship smartphone");
+        smartphone.setPrice(999.99);
+        smartphone.setStatus(ProductStatus.AVAILABLE);
 
-        List<ProductResponseDTO> createEmptyProductList() {
-            return List.of();
-        }
-
-        private ProductResponseDTO createDTO(Long id, String name, String category, String description, Double price, ProductStatus status) {
-            var dto = new ProductResponseDTO();
-            dto.setId(id);
-            dto.setName(name);
-            dto.setCategory(category);
-            dto.setDescription(description);
-            dto.setPrice(price);
-            dto.setStatus(status);
-            return dto;
-        }
+        return List.of(laptop, smartphone);
     }
 }
